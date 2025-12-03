@@ -1,0 +1,9 @@
+export const HAIR_STYLES = ['normal', 'thick', 'mohawk', 'womanLong', 'womanShort'];
+export const HAIR_COLORS = ['#000000', '#4a4a4a', '#ffffff', '#b55400', '#e0ac69', '#f5c65c', '#6c3b2a'];
+export const SKIN_COLORS = ['#f8d9ce', '#f9c9b6', '#deb3a0', '#c68642', '#8d5524', '#5c3a21'];
+export const SHIRT_STYLES = ['hoody', 'short', 'polo'];
+export const SHIRT_COLORS = ['#9287ff', '#6bd9e9', '#fc909f', '#f4d150', '#77311d'];
+export const EYE_STYLES = ['circle', 'oval', 'smile'];
+export const MOUTH_STYLES = ['laugh', 'smile', 'peace'];
+export const GLASSES_STYLES = ['none', 'round', 'square'];
+export const BACKGROUND_COLORS = ['#e0ddff', '#d1f4f9', '#ffd5dc', '#ffdfbf'];

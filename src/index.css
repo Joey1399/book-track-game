@@ -1,0 +1,87 @@
+:root {
+  /* Soft Beige Theme */
+  --color-bg-primary: #fdfbf7;
+  /* Very light beige/off-white */
+  --color-bg-secondary: #f5f0e6;
+  /* Slightly darker beige */
+  --color-bg-tertiary: #e6dfd1;
+  /* Darker beige for borders/accents */
+
+  --color-text-primary: #5c554b;
+  /* Dark brownish grey for text */
+  --color-text-secondary: #8c857b;
+  /* Lighter brownish grey */
+
+  --color-accent-primary: #d4c5a9;
+  /* Soft tan accent */
+  --color-accent-secondary: #b0a695;
+  /* Darker tan accent */
+
+  --font-family-base: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 2rem;
+
+  --radius-md: 12px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+}
+
+[data-theme="dark"] {
+  /* Dark Theme - Cozy Night Mode */
+  --color-bg-primary: #1a1816;
+  /* Very dark brown/black */
+  --color-bg-secondary: #2c2824;
+  /* Dark brown */
+  --color-bg-tertiary: #3e3832;
+  /* Lighter dark brown */
+
+  --color-text-primary: #e6dfd1;
+  /* Light beige text */
+  --color-text-secondary: #b0a695;
+  /* Muted beige text */
+
+  --color-accent-primary: #8b7355;
+  /* Muted gold/brown */
+  --color-accent-secondary: #5c4f3b;
+  /* Darker accent */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.text-gradient {
+  color: var(--color-text-primary);
+  /* Removed gradient for simpler look */
+}
+
+.placeholder-page {
+  text-align: center;
+  padding: 4rem;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+}

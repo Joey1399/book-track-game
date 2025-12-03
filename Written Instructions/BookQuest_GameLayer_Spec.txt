@@ -1,0 +1,373 @@
+BOOKQUEST GAME LAYER – IMPLEMENTATION BRIEF FOR CODING ASSISTANT
+==============================================================
+
+High-level Goal
+---------------
+Extend the existing BookQuest web app (book tracking with Home / My Books / Game nav) with a “game layer” consisting of:
+
+1. Base CHARACTER CREATION for first-time users (choose avatar appearance, live preview, save config).
+2. Base HOUSE CREATION for first-time users (choose house style/theme, live preview, save config).
+3. Persistent GAME PROFILE tied to the logged-in user.
+4. Routing so that first-time users are guided through character creation → house creation before seeing the main Game dashboard.
+
+Reward / loot and advanced house decorating logic will be implemented later. For now, only base setup is required.
+
+
+Assumptions
+-----------
+- The app is already built as a web frontend (likely React/Next.js or similar) with user authentication in place.
+- The app already integrates a books API and can:
+  - Search for books.
+  - Display book details (title, author, cover).
+  - Allow users to log books with status (Want to Read, In Progress, Finished, Did Not Finish), ratings, and reviews.
+- There is a backend (REST, GraphQL, or serverless) with a database where we can add new tables/collections/fields.
+
+If any of these assumptions are wrong, adapt the implementation details but keep the data model and flow logically equivalent.
+
+
+Overview of New Concepts
+------------------------
+We will add:
+
+1) Game Profile
+   - Per-user record that stores whether the user has created their character and house, and the stored configuration of each.
+
+2) Character Configuration
+   - A small configuration object representing the base appearance of the avatar. 
+   - Implemented using an off-the-shelf avatar component (e.g., `react-nice-avatar` or equivalent) so we don’t have to custom-render sprites yet.
+   - Must support live preview as the user adjusts options (hair, skin tone, outfit, etc.).
+
+3) House Configuration
+   - A simple “theme/skin” config representing the user’s base house setup.
+   - Implemented by selecting between a small set of pre-defined house exteriors and interiors (images/assets).
+   - Must support live preview as the user chooses options.
+
+4) First-time Setup Flow
+   - When the user navigates to the “Game” area:
+     - If they have no GameProfile → create one with all flags false.
+     - If `hasCreatedCharacter` is false → route to Character Setup.
+     - Else if `hasCreatedHouse` is false → route to House Setup.
+     - Else → route to Game Dashboard (stub view for now).
+
+
+Data Model
+----------
+
+NOTE: Use the closest concept in the existing backend (e.g., tables if SQL, collections if NoSQL, etc.). Names can be adapted to match conventions, but keep the shape of the data.
+
+1. GAME_PROFILE
+
+   - Table/collection: `game_profiles` (or `GameProfile` model)
+   - One row per user.
+
+   Fields (minimum):
+   - `id`: primary key.
+   - `user_id`: foreign key to users table.
+   - `has_created_character`: boolean, default false.
+   - `has_created_house`: boolean, default false.
+   - `character_config`: JSON / text (nullable).
+   - `house_config`: JSON / text (nullable).
+   - `created_at`, `updated_at`: timestamps.
+
+2. CHARACTER_CONFIG (stored inside `game_profiles.character_config` as JSON)
+
+   This can be as simple as a flat config object compatible with an avatar component.
+
+   Example shape (TypeScript notation):
+
+   ```ts
+   type CharacterConfig = {
+     sex: 'man' | 'woman' | 'neutral';  // or any options supported by the avatar library
+     hairStyle: string;                 // e.g. 'normal', 'thick', 'mohawk', 'womanLong'
+     hairColor: string;                 // hex color or named color
+     skinColor: string;                 // hex color
+     eyeStyle?: string;                 // optional, depends on avatar library
+     outfitStyle: string;               // e.g. 'hoody', 'short', 'overall'
+     shirtColor?: string;               // optional, depends on avatar library
+     backgroundColor?: string;          // optional, for avatar background
+   };
+   ```
+
+   This config should map 1:1 to props accepted by the chosen avatar library.
+
+3. HOUSE_CONFIG (stored inside `game_profiles.house_config` as JSON)
+
+   For the first version, this is just a “base theme” selection. We are NOT doing full grid-based decorating yet.
+
+   Example shape:
+
+   ```ts
+   type HouseConfig = {
+     exteriorStyleId: string;  // e.g. 'cottage', 'modern', 'townhouse'
+     interiorThemeId: string;  // e.g. 'cozy', 'minimal', 'pastel'
+   };
+   ```
+
+   Each `exteriorStyleId` and `interiorThemeId` corresponds to a specific static asset (PNG/JPG/SVG) that will be rendered in the frontend.
+
+
+Backend API Requirements
+------------------------
+
+Add API endpoints or GraphQL operations to manage `GameProfile`.
+
+1) GET /game-profile (or equivalent)
+   - Input: authenticated user (derive from session / token).
+   - Behavior:
+     - Look up `game_profiles` row for this user.
+     - If not found, create a new row with:
+       - `has_created_character = false`
+       - `has_created_house = false`
+       - `character_config = null`
+       - `house_config = null`
+     - Return the resulting GameProfile JSON.
+
+   - Output example:
+
+   ```json
+   {
+     "id": "gp_123",
+     "user_id": "user_abc",
+     "has_created_character": false,
+     "has_created_house": false,
+     "character_config": null,
+     "house_config": null
+   }
+   ```
+
+2) POST /game-profile/character
+   - Purpose: Save base character config and mark character creation complete.
+   - Input JSON:
+     - `characterConfig: CharacterConfig`
+   - Behavior:
+     - Validate config (ensure the chosen values are from allowed sets).
+     - Upsert into `game_profiles` for the user:
+       - `character_config = characterConfig`
+       - `has_created_character = true`
+     - Return updated GameProfile or at least the `character_config` and flags.
+
+3) POST /game-profile/house
+   - Purpose: Save base house config and mark house creation complete.
+   - Input JSON:
+     - `houseConfig: HouseConfig`
+   - Behavior:
+     - Validate IDs against the allowed exterior/interior options.
+     - Upsert into `game_profiles` for the user:
+       - `house_config = houseConfig`
+       - `has_created_house = true`
+     - Return updated GameProfile.
+
+NOTE: If you already have a consolidated “profile” endpoint, you can integrate these fields there instead of separate routes. The important part is that we can:
+- Fetch GameProfile for the current user.
+- Save character config.
+- Save house config.
+
+
+Frontend Architecture
+---------------------
+
+The app already has a navigation item called “Game”. We will extend the Game area with:
+
+Routes (examples, adjust to router in use):
+- `/game`                -> Game entry point (decides where to route based on GameProfile).
+- `/game/character-setup`-> Character creation wizard.
+- `/game/house-setup`    -> House creation wizard.
+- `/game/dashboard`      -> Main game dashboard (stub view for now, just shows the avatar & house).
+
+Core new components (React naming for clarity; adjust as needed):
+
+1) `<GameEntry />`
+   - Mounted at `/game`.
+   - On mount:
+     - Call `GET /game-profile` to fetch or create GameProfile.
+     - Based on `has_created_character` and `has_created_house`, route user:
+       - If !has_created_character → `/game/character-setup`
+       - Else if !has_created_house → `/game/house-setup`
+       - Else → `/game/dashboard`
+
+2) `<CharacterCreator />`
+   - Mounted at `/game/character-setup`.
+   - Responsibilities:
+     - Fetch current GameProfile (or get via context/store if already loaded).
+     - Initialize a `CharacterConfig` state object (either from profile or default).
+     - Render:
+       - A large **avatar preview** using a composable avatar component.
+         - Suggested: use a library like `react-nice-avatar` or similar that accepts a config object as props. The exact library can be chosen by the agent; key requirement is that the avatar can be fully determined by a small config object.
+       - A set of control panels (cards / segmented controls) for:
+         - Body (skin tone)
+         - Hair (style + color)
+         - Outfit (style + optional color)
+         - Optional: background color, accessories, etc.
+       - “Save Character” button.
+
+     - Behavior:
+       - When user clicks any option (hair style, color, etc.), update `CharacterConfig` in local state.
+       - The avatar preview re-renders automatically as config changes.
+       - On clicking “Save Character”:
+         - POST `characterConfig` to `/game-profile/character`.
+         - On success, route to `/game/house-setup`.
+
+   - Implementation detail:
+     - Maintain a static list of allowed values in a constants file, e.g.:
+       - `HAIR_STYLES`, `HAIR_COLORS`, `SKIN_COLORS`, `OUTFIT_STYLES`.
+     - Render these as selectable buttons; highlight the currently selected option.
+     - Initially, do not worry about rarity/unlocks; all base options are available.
+
+3) `<HouseCreator />`
+   - Mounted at `/game/house-setup`.
+   - Responsibilities:
+     - Fetch GameProfile.
+     - Initialize a `HouseConfig` state object (either from profile or default).
+     - Render:
+       - A **HousePreview** area that shows the currently selected `exteriorStyleId` and `interiorThemeId` as images.
+         - For v1, this can simply be two stacked images: an exterior render and an interior “room” preview.
+       - A panel of selectable exterior styles (2–4 options).
+       - A panel of selectable interior themes (2–4 options).
+       - “Save House” button.
+
+     - Behavior:
+       - When user selects an exterior card, set `houseConfig.exteriorStyleId`.
+       - When user selects an interior card, set `houseConfig.interiorThemeId`.
+       - HousePreview updates live.
+       - On clicking “Save House”:
+         - POST `houseConfig` to `/game-profile/house`.
+         - On success, route to `/game/dashboard`.
+
+   - Static options:
+     - Define arrays in a constants file, e.g.:
+
+       ```ts
+       const EXTERIOR_STYLES = [
+         { id: 'cottage', label: 'Cozy Cottage', image: '/assets/house/exteriors/cottage.png' },
+         { id: 'modern', label: 'Modern Loft', image: '/assets/house/exteriors/modern.png' },
+         { id: 'townhouse', label: 'Townhouse', image: '/assets/house/exteriors/townhouse.png' }
+       ];
+
+       const INTERIOR_THEMES = [
+         { id: 'cozy', label: 'Warm & Cozy', image: '/assets/house/interiors/cozy.png' },
+         { id: 'minimal', label: 'Minimal & Bright', image: '/assets/house/interiors/minimal.png' },
+         { id: 'pastel', label: 'Pastel Dream', image: '/assets/house/interiors/pastel.png' }
+       ];
+       ```
+
+4) `<GameDashboard />`
+   - Mounted at `/game/dashboard`.
+   - For now, a simple stub page that:
+     - Fetches GameProfile.
+     - If either `has_created_character` or `has_created_house` is false, redirect back through the setup flow (safety).
+     - Displays:
+       - The saved avatar using `character_config`.
+       - The saved house preview using `house_config`.
+     - Later, we will expand this to show:
+       - Progress (books finished).
+       - Recently unlocked rewards.
+       - Buttons to “Customize Character” / “Customize House” (using the same components as the setup wizards).
+
+
+Asset Requirements
+------------------
+
+1) Avatar / Character Assets
+   - Use a composable avatar library to avoid custom drawing for now.
+   - Requirements for the library:
+     - Accepts a config object as props (hairStyle, hairColor, skinColor, etc.).
+     - Supports a cute / friendly style that fits the existing BookQuest UI.
+     - Can be rendered at different sizes (e.g. 160–220px square for the preview, smaller in the dashboard).
+   - The coding agent should select a specific library (e.g., `react-nice-avatar` or equivalent) that meets these requirements and integrate it.
+
+2) House Visual Assets
+   - Provide or source static images for:
+     - 2–4 house EXTERIORS (front of the house).
+     - 2–4 matching INTERIOR “room” images.
+   - These can be:
+     - Hand-drawn or composed from existing game asset packs (e.g. cozy pixel art interiors) exported to PNG.
+     - The important part is that each `exteriorStyleId` / `interiorThemeId` maps to a specific image file with a stable path.
+   - The coding agent should:
+     - Place these images in a dedicated asset folder (e.g., `/public/assets/house/...`).
+     - Reference them from the `EXTERIOR_STYLES` and `INTERIOR_THEMES` constants.
+
+
+State Management Considerations
+-------------------------------
+
+- Frontend must know the current GameProfile in multiple places (GameEntry, CharacterCreator, HouseCreator, GameDashboard).
+- Options:
+  - Simple: fetch GameProfile in each route/component as needed and cache minimally.
+  - More structured: maintain a `GameProfileContext` or global store slice and share across components.
+
+Suggested simple approach:
+- On any `/game/*` route:
+  - If GameProfile is not loaded in memory, call `GET /game-profile` and store it in state/context.
+  - Pass it down to child components as props or via context.
+- When CharacterCreator / HouseCreator saves changes:
+  - Update backend via POST.
+  - Update in-memory GameProfile state accordingly.
+  - Redirect to next route.
+
+
+Error Handling & Edge Cases
+---------------------------
+
+- If `GET /game-profile` fails due to authentication:
+  - Redirect user to login or show appropriate error.
+- If the user deletes their account (if supported), ensure corresponding `game_profiles` are also cleaned up or handled safely.
+- If `character_config` or `house_config` is malformed or references outdated asset IDs:
+  - Frontend should fall back to defaults.
+- If user tries to access `/game/dashboard` directly without having completed setup:
+  - Read GameProfile.
+  - Redirect to `/game/character-setup` or `/game/house-setup` as needed.
+
+
+Future Expansion (for context, not required now)
+------------------------------------------------
+
+This architecture intentionally leaves room for future game features:
+
+1) Rewards / Loot
+   - New tables: `rewards`, `user_rewards` that reference asset IDs and slots.
+   - When a book is marked FINISHED, backend can:
+     - Increment a finished book count.
+     - Choose a reward from `rewards` based on rules.
+     - Insert into `user_rewards` for that user.
+   - The `CharacterConfig` and `HouseConfig` can be extended to reference equipped reward IDs.
+
+2) Advanced Character Customization
+   - Replace or augment the avatar library with pixel-art sprites.
+   - Use the same config structure (`hairId`, `topId`, etc.), but map to sprite sheets instead of library props.
+
+3) Advanced House Decorating
+   - Introduce a grid-based house layout and drag-and-drop editor using React DnD or a canvas library.
+   - Store layout in additional tables (e.g., `house_layouts` with tile data per room).
+   - Use `house_config` as the “base style” and layer decor items on top.
+
+For now, DO NOT implement these future features; only implement the base character creation, base house creation, GameProfile, and routing.
+
+
+Summary Checklist for Coding Agent
+----------------------------------
+
+1) Add `game_profiles` storage (table/collection/model) with fields:
+   - `user_id`, `has_created_character`, `has_created_house`, `character_config`, `house_config`, timestamps.
+
+2) Implement backend endpoints:
+   - `GET /game-profile` → fetch/create GameProfile for current user.
+   - `POST /game-profile/character` → save CharacterConfig and set `has_created_character = true`.
+   - `POST /game-profile/house` → save HouseConfig and set `has_created_house = true`.
+
+3) Implement frontend routing:
+   - `/game` entry component that:
+     - Loads GameProfile.
+     - Routes to `/game/character-setup`, `/game/house-setup`, or `/game/dashboard` as appropriate.
+   - `/game/character-setup` → CharacterCreator page.
+   - `/game/house-setup` → HouseCreator page.
+   - `/game/dashboard` → simple dashboard displaying avatar and house preview.
+
+4) Implement frontend components:
+   - `<CharacterPreview />` using a composable avatar library.
+   - `<CharacterCreator />` with option selectors and “Save Character” button.
+   - `<HousePreview />` that renders selected exterior/interior images.
+   - `<HouseCreator />` with selectable exterior and interior cards, and “Save House” button.
+   - `<GameDashboard />` showing saved avatar + house.
+
+5) Wire everything to match existing BookQuest styles:
+   - Use the current typography, spacing, colors, and card/modal styles so that character and house setup screens feel like a natural extension of the existing UI.

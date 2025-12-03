@@ -1,0 +1,196 @@
+.home-page {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.hero-section {
+    width: 100%;
+    max-width: 700px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2rem;
+}
+
+.hero-title {
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    opacity: 0.9;
+}
+
+.hero-search-container {
+    width: 100%;
+    position: relative;
+    /* For absolute positioning of suggestions */
+}
+
+.search-input-wrapper {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    border: 1px solid transparent;
+    z-index: 20;
+    position: relative;
+}
+
+.search-input-wrapper:focus-within {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+    background: var(--color-bg-primary);
+    border-color: var(--color-bg-tertiary);
+}
+
+.hero-search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    padding: 0.5rem 0;
+    outline: none;
+}
+
+.hero-search-input::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+}
+
+.search-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.action-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-full);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+}
+
+.action-pill:hover {
+    background: var(--color-accent-primary);
+    transform: translateY(-1px);
+}
+
+.text-secondary {
+    color: var(--color-text-secondary);
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Suggestions Dropdown */
+.suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background: var(--color-bg-primary);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    z-index: 10;
+    border: 1px solid var(--color-bg-tertiary);
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-align: left;
+    border-bottom: 1px solid var(--color-bg-secondary);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: var(--color-bg-secondary);
+}
+
+.suggestion-cover {
+    width: 40px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--color-bg-tertiary);
+}
+
+.suggestion-info {
+    flex: 1;
+    min-width: 0;
+    /* Prevent text overflow */
+}
+
+.suggestion-title {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95rem;
+}
+
+.suggestion-author {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.suggestion-add-btn {
+    color: var(--color-text-secondary);
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.suggestion-item:hover .suggestion-add-btn {
+    opacity: 1;
+    color: var(--color-accent-primary);
+}
